@@ -91,33 +91,44 @@ class DataCompiler {
 
   }
 
-  function getSubjectsFrom($graphName){
-    return $this->getUrisFrom($graphName, 'subject');
+  function getSubjectsFrom($subsetUri){
+    return $this->getUrisFrom($subsetUri, 'subject');
   }
 
-  function getObjectsFrom($graphName){
-    return $this->getUrisFrom($graphName, 'object');
+  function getObjectsFrom($subsetUri){
+    return $this->getUrisFrom($subsetUri, 'object');
   }
 
 
-  function getUrisFrom($graphName, $position){
-    if(@isset($this->urisFrom[$graphName][$position])){
-      return $this->urisFrom[$graphName][$position];
+  function getFilenameForSubset($subsetUri){
+    $fileName = $this->getDestinationFileName($subsetUri);
+    if($dataDump = $this->graph->get_first_resource($subsetUri, VOID.'dataDump')){
+      return $dataDump;
+    } else if(file_exists($fileName)) {
+      return $fileName;
+    } else {
+      return false;
     }
-    echo "\nGetting URIs from $graphName";
-    $fileName = 'data/'.urlencode($graphName).'.nt';
+  }
+
+  function getUrisFrom($subsetUri, $position){
+    if(@isset($this->urisFrom[$subsetUri][$position])){
+      return $this->urisFrom[$subsetUri][$position];
+    }
+    echo "\nGetting URIs from $subsetUri";
+    $fileName = $this->getFilenameForSubset($subsetUri);
     if(!file_exists($fileName)){
-      echo  "\n$graphName not a file\n";
+      echo  "\n$subsetUri not a file\n";
       $uris = array();
-      $subsets = $this->getSubsets($graphName);
-      foreach($this->getSubsets($graphName) as $subset){
+      $subsets = $this->getSubsets($subsetUri);
+      foreach($this->getSubsets($subsetUri) as $subset){
         $uris = array_merge($this->getUrisFrom($subset, $position), $uris);
       }
       
       if(empty($subsets) && empty($uris)){
-        echo "\nNo subsets for $graphName\n";
-        $this->buildDataset($graphName);
-        return $this->getUrisFrom($graphName, $position);
+        echo "\nNo subsets for $subsetUri\n";
+        $this->buildDataset($subsetUri);
+        return $this->getUrisFrom($subsetUri, $position);
       } else {
         return array_unique($uris);
       }
@@ -136,8 +147,8 @@ class DataCompiler {
       }
     }
     $uris = array_merge($this->getUrisFromBuffer($buffer, $position), $uris);
-    $this->urisFrom[$graphName][$position] = array_unique($uris);
-    return $this->urisFrom[$graphName][$position];
+    $this->urisFrom[$subsetUri][$position] = array_unique($uris);
+    return $this->urisFrom[$subsetUri][$position];
   }
 
 
@@ -245,8 +256,8 @@ class DataCompiler {
     }  
   }
 
-  function fetchDataLinkingToSubjectsFrom($endpoint, $graphName, $fileName, $constructTemplate){
-    $subjects = $this->getSubjectsFrom($graphName);
+  function fetchDataLinkingToSubjectsFrom($endpoint, $subsetUri, $fileName, $constructTemplate){
+    $subjects = $this->getSubjectsFrom($subsetUri);
 
     foreach($subjects as $subject){
       $query = str_replace('?item ', "<{$subject}> ", $constructTemplate);
@@ -295,21 +306,21 @@ class DataCompiler {
     echo "\nUploading $uri\n";
     $filename = $this->getDestinationFileName($uri);
     if($source = $this->getSourceForDataset($uri)){
-      $graphName = $source;
+      $subsetUri = $source;
     } else {
-      $graphName = $uri;
+      $subsetUri = $uri;
     }
     if(file_exists($filename)){
-      if(!isset($this->lastUploaded[$graphName]) OR $this->lastUploaded[$graphName][$this->uri] < filemtime($filename)){
-        echo "\nUploading $filename to graph: $graphName\n";
-        var_dump($this->getStoreEndpoint($graphName)->submit_ntriples_in_batches_from_file($filename, 200, 'upload')->status_code);
-        if(!is_array($this->lastUploaded[$graphName])){ 
-          $this->lastUploaded[$graphName] = array();
+      if(!isset($this->lastUploaded[$subsetUri]) OR $this->lastUploaded[$subsetUri][$this->uri] < filemtime($filename)){
+        echo "\nUploading $filename to graph: $subsetUri\n";
+        var_dump($this->getStoreEndpoint($subsetUri)->submit_ntriples_in_batches_from_file($filename, 200, 'upload')->status_code);
+        if(!is_array($this->lastUploaded[$subsetUri])){ 
+          $this->lastUploaded[$subsetUri] = array();
         }
-        $this->lastUploaded[$graphName][$this->uri] = time();
+        $this->lastUploaded[$subsetUri][$this->uri] = time();
         sleep(1);
       } else {
-        echo "\n$graphName unchanged since last upload\n";
+        echo "\n$subsetUri unchanged since last upload\n";
       }
     } else {
       echo "\n No file for $uri, trying subsets\n";
@@ -319,9 +330,9 @@ class DataCompiler {
     }
   }
 
-  function getStoreEndpoint($graphName){
+  function getStoreEndpoint($subsetUri){
     $slug = array_pop(preg_split('@#|/@', $this->uri));
-    $this->storeEndpoint->uri =  "http://api.kasabi.com/dataset/$slug/store?graph=".urlencode($graphName)."&apikey=".API_KEY;
+    $this->storeEndpoint->uri =  "http://api.kasabi.com/dataset/$slug/store?graph=".urlencode($subsetUri)."&apikey=".API_KEY;
     echo "\nUploading to: {$this->storeEndpoint->uri}\n";
     return $this->storeEndpoint;
   }

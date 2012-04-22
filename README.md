@@ -1,6 +1,7 @@
 RDF-Dataset-Combiner
 ====================
 
+
 Takes a VoID-based RDF description of the SPARQL queries and datasets used to build the target composite dataset. 
 
 The composite dataset is related to its components with `void:subset`
@@ -26,3 +27,13 @@ a SPARQL query or triple pattern:
   - `dp:constrainedByObjectsFrom`
   - `dp:constrainedByLinksToSubjectsFrom` (all these point to other
     constructed subsets)
+
+
+If you have a linkset and you want to bring it and its targets into your
+dataset, you can do something like this:
+
+    <a> void:subset <a-b-intersection> .
+    <a-b-intersection> dct:source <b> ;
+       dp:constrainedByObjectsFrom <a-b-linkset> .
+    <b> void:sparqlEndpoint <b/sparql> .
+    <a-b-linkset> void:dataDump <a-b-linkset.nt> .

@@ -81,12 +81,16 @@ class DataCompiler {
       }
     }
     $source = $this->getSourceForDataset($uri);
-    $slug = array_pop(preg_split('@#|/@',$source));
-    if(empty($slug)){
-      throw new Exception("can't calculate slug for <$source>, source of <{$uri}>");
+    if(strpos($source, 'kasabi.com/dataset/')){
+        $slug = array_pop(preg_split('@#|/@',$source));
+      if(empty($slug)){
+        throw new Exception("can't calculate slug for <$source>, source of <{$uri}>");
+      }
+        return "http://api.kasabi.com/dataset/{$slug}/apis/sparql";
+    } else {
+      $this->graph->read_data($source);
+      return $this->graph->get_first_resource($source, VOID.'sparqlEndpoint');
     }
-    return "http://api.kasabi.com/dataset/{$slug}/apis/sparql";
-
     throw new Exception("No endpoint found for $uri ");
 
   }

@@ -1,0 +1,256 @@
+@base <http://data.kasabi.com/dataset/> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dp: <http://keithalexander.co.uk/vocabs/data-puller#> .
+@prefix spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> .
+
+<digital-city-brighton>
+  a void:Dataset ;
+  void:subset 
+            <ordnancesurvey-brighton>, 
+            <ordnancesurvey-education-linkset-brighton>, 
+            <education-brighton> , 
+            <ordnancesurvey-renewable-energy-generators-linkset-brighton>,
+            <english-heritage-brighton>,
+            <nhs-organizations-brighton-subset>,
+            <renewable-energy-generators-brighton>,
+            <mot-testing-stations-brighton> ,
+            <transport-brighton>,
+            <crime-brighton>,
+            <land-registry-brighton>,
+            <brighton-geocoded>
+             ;
+.
+
+<brighton-geocoded>
+  dct:source <digital-city-brighton> ;
+  dp:constrainedByQuery """
+PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+CONSTRUCT
+{
+ ?thing geo:lat ?lat ; geo:long ?long .
+}
+WHERE
+{
+  ?postcode a <http://data.ordnancesurvey.co.uk/ontology/postcode/PostcodeUnit> ;
+    spatial:contains ?thing ;
+    geo:lat ?lat ; geo:long ?long .
+  ?thing a ?something .
+  FILTER(?something!= <http://data.ordnancesurvey.co.uk/ontology/postcode/PostcodeUnit>)
+.
+}
+"""
+.
+
+<land-registry-brighton>
+  dct:source <land-registry-brighton> ;
+  dp:constrainingTriplePattern " ?s ?p ?o .";
+.
+
+<crime-brighton>
+  dct:source <http://lod-cloud.net/dataset/rkb-explorer-crime> ;
+  void:subset <crime-brighton-postcodes> , <crime-brighton-postcodes-related> , <crime-brighton-resources> ;
+.
+
+<crime-brighton-postcodes>
+  dp:constrainedByQuery """
+PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+CONSTRUCT { ?postcode spatial:contains ?s . ?s ?p ?o .  }
+WHERE { ?s <http://commons.psi.enakting.org/def/nearest-postcode> ?postcode .
+FILTER(REGEX(str(?postcode), 'BN'))
+?s ?p ?o .  
+}
+""" ;
+.
+
+<crime-brighton-resources>  dp:constrainedByObjectsFrom <crime-brighton-postcodes-related> .
+
+<crime-brighton-postcodes-related>
+  dp:constrainedByObjectsFrom <crime-brighton-postcodes> ;
+.
+
+
+<http://lod-cloud.net/dataset/rkb-explorer-crime>  void:sparqlEndpoint <http://crime.rkbexplorer.com/sparql/> .
+
+<ordnancesurvey-brighton>
+  dct:source <ordnance-survey-linked-data> ;
+  void:subset <ordnancesurvey-brighton/graphs/brighton> , 
+              <ordnancesurvey-brighton/graphs/postcodes> , 
+              <ordnancesurvey-brighton/graphs/wards> ,
+              <ordnancesurvey-brighton/graphs/namedplaces> ,
+              <ordnancesurvey-brighton/graphs/postcodeareas>;
+.
+
+<ordnancesurvey-brighton/graphs/namedplaces>
+  dp:constrainingTriplePattern """
+  ?s <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/twentyKMGridReference> <http://data.ordnancesurvey.co.uk/id/20kmgridsquare/SW84> ;
+      ?p ?o .
+""" ;
+.
+
+<ordnancesurvey-brighton/graphs/postcodeareas>
+  dp:constrainingTriplePattern """
+<http://data.ordnancesurvey.co.uk/id/postcodearea/BN> ?bnp ?bno .
+?district a <http://data.ordnancesurvey.co.uk/ontology/postcode/PostcodeDistrict> ;
+  <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/within> <http://data.ordnancesurvey.co.uk/id/postcodearea/BN>  ;
+.
+?sector a <http://data.ordnancesurvey.co.uk/ontology/postcode/PostcodeSector> ;
+  <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/within> <http://data.ordnancesurvey.co.uk/id/postcodearea/BN>  ;
+.
+"""  ;
+.
+
+<ordnancesurvey-renewable-energy-generators-linkset-brighton>
+  dct:source <ordnance-survey-renewable-energy-generators-linkset> ;
+  dp:constrainedBySubjectsFrom <ordnancesurvey-brighton/graphs/wards>, <ordnancesurvey-brighton/graphs/brighton> ;
+.
+
+<mot-testing-stations-brighton>
+  dct:source <mot-testing-stations> ;
+  dp:constrainedByQuery """
+PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+CONSTRUCT { ?postcode spatial:contains ?s . ?s ?p ?o .  }
+WHERE { ?s <http://data.ordnancesurvey.co.uk/ontology/postcode/postcode> ?postcode .
+FILTER(REGEX(str(?postcode), 'BN'))
+?s ?p ?o .  
+}
+""" ;
+.
+
+<renewable-energy-generators-brighton>
+  dct:source <renewable-energy-generators> ;
+  dp:constrainedByObjectsFrom <ordnancesurvey-renewable-energy-generators-linkset-brighton> ;
+.
+
+<ordnancesurvey-brighton/graphs/brighton>
+    dp:constrainedByUnpagedQuery """
+CONSTRUCT {
+   <http://data.ordnancesurvey.co.uk/id/7000000000036749> ?p ?o ; ?pl ?ol .
+  ?o ?p2 ?o2 .
+}
+WHERE {
+  <http://data.ordnancesurvey.co.uk/id/7000000000036749> ?p ?o ; ?pl ?ol .
+  ?o ?p2 ?o2 .
+}
+"""
+.
+
+<ordnancesurvey-brighton/graphs/postcodes>
+ dp:constrainingTriplePattern """
+?s <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/within> 
+  <http://data.ordnancesurvey.co.uk/id/postcodearea/BN> ; 
+  ?p ?o ; 
+  ?pr ?or .
+  ?or ?p2 ?o2 .
+""" ;
+.
+
+<ordnancesurvey-brighton/graphs/wards>
+dp:constrainingTriplePattern """
+  ?s <http://data.ordnancesurvey.co.uk/ontology/admingeo/inDistrict> <http://data.ordnancesurvey.co.uk/id/7000000000036749> ;
+  ?p ?o ;
+  <http://data.ordnancesurvey.co.uk/ontology/geometry/extent> ?extent .
+?extent ?ep ?eo .
+ """;
+.
+
+
+<ordnance-survey-uk-education-linkset> void:sparqlEndpoint <http://api.kasabi.com/dataset/ordnance-survey-uk-education-linkset/apis/sparql> .
+
+
+<ordnancesurvey-education-linkset-brighton> 
+  dct:source <ordnance-survey-uk-education-linkset> ;
+  dp:constrainedBySubjectsFrom <ordnancesurvey-brighton> ;
+.
+
+<education> void:sparqlEndpoint <http://api.kasabi.com/dataset/education/apis/sparql> .
+
+<education-brighton>
+  dct:source <education> ;
+  dp:constrainedByObjectsFrom <ordnancesurvey-education-linkset-brighton> ;
+  dp:constructTemplate """
+CONSTRUCT { 
+ ?item <http://education.data.gov.uk/def/school/address> ?address ;
+ ?p ?o .
+ ?address ?ap ?ao .
+} WHERE {
+ 
+ ?item <http://education.data.gov.uk/def/school/address> ?address ;
+ ?p ?o .
+ ?address ?ap ?ao .
+}
+"""
+.
+
+<ordnance-survey-renewable-energy-generators-linkset> void:sparqlEndpoint <http://api.kasabi.com/dataset/ordnance-survey-renewable-energy-generators-linkset/apis/sparql> .
+<ordnance-survey-linked-data> void:sparqlEndpoint <http://api.kasabi.com/dataset/ordnance-survey-linked-data/apis/sparql> .
+
+<english-heritage-brighton>
+  dct:source <english-heritage> ;
+  dp:constrainedByLinksToSubjectsFrom <ordnancesurvey-brighton> ;
+  dp:constructTemplate """
+  PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+  CONSTRUCT
+  {
+    ?item spatial:contains ?s .
+    ?s ?p ?o .
+  } WHERE 
+  {
+    ?s spatial:within ?item ; ?p ?o .
+  }
+""" ;
+.
+
+<nhs-organizations-brighton-subset>
+  dct:source <nhs-organization> ;
+#  dp:constrainedByLinksToSubjectsFrom <ordnancesurvey-brighton> ;
+  dp:constrainedByQuery """
+PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+PREFIX org: <http://www.w3.org/ns/org#>
+  CONSTRUCT {
+    ?item spatial:contains ?hospital .
+    ?hospital org:hasSite ?site ; ?hp ?ho .
+    ?site ?p ?o .
+  } WHERE {
+    ?site ?p ?o ; <http://data.ordnancesurvey.co.uk/ontology/postcode/postcode> ?item .
+    filter(regex(str(?item), 'BN'))
+    ?hospital org:hasSite ?site ; ?hp ?ho .
+}
+
+""" ;
+.
+
+<transport-brighton>
+  dct:source <transport> ;
+  void:subset <transport-brighton-trafficpoints> , 
+              <transport-brighton-stoppoints> .
+
+<transport-brighton-trafficpoints>
+  dct:source <transport> ;
+  dp:constrainedByQuery """
+PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+CONSTRUCT {
+<http://data.ordnancesurvey.co.uk/id/7000000000036749> spatial:contains ?s .
+?s ?p ?o .
+} WHERE {
+?s <http://statistics.data.gov.uk/def/administrative-geography/localAuthority> <http://statistics.data.gov.uk/id/local-authority/00ML> ;
+?p ?o .
+}  
+""" ;
+.
+
+<transport-brighton-stoppoints>
+  dct:source <transport> ;
+  dp:constrainedByQuery """
+ PREFIX spatial: <http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> 
+ CONSTRUCT {
+  <http://data.ordnancesurvey.co.uk/id/7000000000036749> spatial:contains ?s .
+  ?s ?p ?o .
+} WHERE {
+   ?s  <http://transport.data.gov.uk/def/naptan/administrativeArea> <http://transport.data.gov.uk/id/administrative-area/008> ;
+    ?p ?o .
+}
+"""
+.
